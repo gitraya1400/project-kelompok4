@@ -1,0 +1,11 @@
+[mysqld]
+# Identity (HARUS BEDA dari master)
+server-id           = 2
+bind-address        = 0.0.0.0
+
+# Slave hanya baca
+read_only           = 1
+
+# General Query Log
+general_log         = 1
+general_log_file    = /var/log/mysql/general.log

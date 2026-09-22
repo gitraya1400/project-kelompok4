@@ -1,0 +1,13 @@
+[mysqld]
+# Identity
+server-id           = 1
+bind-address        = 0.0.0.0
+
+# Binary Log untuk Replikasi
+log_bin             = /var/log/mysql/mysql-bin.log
+binlog_format       = ROW
+binlog_do_db        = klinik_db
+
+# General Query Log (Audit Layer 2)
+general_log         = 1
+general_log_file    = /var/log/mysql/general.log
