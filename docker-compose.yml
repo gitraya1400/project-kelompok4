@@ -4,14 +4,19 @@ services:
     image: mysql:8.0
     container_name: db-master
     restart: always
-    command: --server-id=1 --log-bin=mysql-bin --binlog-format=ROW --binlog-do-db=klinik_db --general-log=1
+    command: >
+      --server-id=1
+      --log-bin=mysql-bin
+      --binlog-format=ROW
+      --binlog-do-db=klinik_db
+      --general-log=1
+      --general-log-file=/var/log/mysql/general.log
     ports:
       - "3305:3306"
     environment:
       MYSQL_ROOT_PASSWORD: RootPass123!
       MYSQL_DATABASE: klinik_db
     volumes:
-      - ./config/mysql-master.cnf:/etc/mysql/conf.d/master.cnf
       - ./sql:/docker-entrypoint-initdb.d
     networks:
       - dbnet
@@ -20,13 +25,15 @@ services:
     image: mysql:8.0
     container_name: db-slave
     restart: always
-    command: --server-id=2 --read-only=1 --general-log=1
+    command: >
+      --server-id=2
+      --read-only=1
+      --general-log=1
+      --general-log-file=/var/log/mysql/general.log
     ports:
       - "3307:3306"
     environment:
       MYSQL_ROOT_PASSWORD: RootPass123!
-    volumes:
-      - ./config/mysql-slave.cnf:/etc/mysql/conf.d/slave.cnf
     networks:
       - dbnet
     depends_on:
