@@ -11,6 +11,7 @@ services:
       --binlog-do-db=klinik_db
       --general-log=1
       --general-log-file=/var/log/mysql/general.log
+      --log-output=FILE,TABLE
     ports:
       - "3305:3306"
     environment:

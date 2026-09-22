@@ -11,3 +11,4 @@ binlog_do_db        = klinik_db
 # General Query Log (Audit Layer 2)
 general_log         = 1
 general_log_file    = /var/log/mysql/general.log
+log_output          = FILE,TABLE
