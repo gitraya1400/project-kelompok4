@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Klinik Sehat Digital — Security & High Availability Showcase</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Top Navigation Bar -->
+  <header class="navbar">
+    <div class="nav-brand">
+      <div class="brand-logo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          <path d="M12 8v8"/>
+          <path d="M8 12h8"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="brand-title">Klinik Sehat Digital <span class="badge-accent">Cyber-Defense Ops</span></h1>
+        <p class="brand-subtitle">Demonstrasi 5 Skenario Keamanan Database Berpola: Before ➔ During ➔ After</p>
+      </div>
+    </div>
+    <div class="cluster-status-strip">
+      <div class="node-badge" id="badge-master">
+        <span class="status-dot green"></span>
+        <span class="node-name">db-master:3305</span>
+      </div>
+      <div class="node-badge" id="badge-slave">
+        <span class="status-dot green"></span>
+        <span class="node-name">db-slave:3307</span>
+      </div>
+      <div class="node-badge" id="badge-haproxy">
+        <span class="status-dot green"></span>
+        <span class="node-name">HAProxy:3300</span>
+      </div>
+      <div class="connection-mode-badge" id="connection-mode">
+        <span class="mode-icon">⚡</span>
+        <span id="mode-text">Connecting Live...</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="main-container">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <span>5 SKENARIO EVALUASI</span>
+      </div>
+      <nav class="scenario-nav">
+        <button class="nav-item active" data-tab="ha">
+          <span class="nav-num">01</span>
+          <div class="nav-info">
+            <span class="nav-title">Failover & High Availability</span>
+            <span class="nav-desc">Zero-Downtime Cluster</span>
+          </div>
+        </button>
+
+        <button class="nav-item" data-tab="sqli">
+          <span class="nav-num">02</span>
+          <div class="nav-info">
+            <span class="nav-title">SQL Injection & Mitigasi</span>
+            <span class="nav-desc">Tautologi vs Prepared Stmt</span>
+          </div>
+        </button>
+
+        <button class="nav-item" data-tab="crypto">
+          <span class="nav-num">03</span>
+          <div class="nav-info">
+            <span class="nav-title">SSL/TLS & Enkripsi Data</span>
+            <span class="nav-desc">AES-256 NIK & Secure Transport</span>
+          </div>
+        </button>
+
+        <button class="nav-item" data-tab="rbac">
+          <span class="nav-num">04</span>
+          <div class="nav-info">
+            <span class="nav-title">Least Privilege (RBAC)</span>
+            <span class="nav-desc">Hak Akses Tabel & Error 1142</span>
+          </div>
+        </button>
+
+        <button class="nav-item" data-tab="audit">
+          <span class="nav-num">05</span>
+          <div class="nav-info">
+            <span class="nav-title">Audit Logging & Forensik</span>
+            <span class="nav-desc">Non-Repudiation & Harvester</span>
+          </div>
+        </button>
+      </nav>
+
+      <div class="pattern-legend-card">
+        <h4>Pola Evaluasi Pengujian</h4>
+        <div class="legend-row">
+          <span class="legend-badge red">BEFORE</span>
+          <span class="legend-desc">Tanpa Hardening (Rentan)</span>
+        </div>
+        <div class="legend-row">
+          <span class="legend-badge yellow">DURING</span>
+          <span class="legend-desc">Saat Serangan / Insiden</span>
+        </div>
+        <div class="legend-row">
+          <span class="legend-badge green">AFTER</span>
+          <span class="legend-desc">Mitigasi / Hardening Aktif</span>
+        </div>
+      </div>
+
+      <div class="quick-links-card">
+        <h4>Tautan Cepat</h4>
+        <a href="http://localhost:8900" target="_blank" class="quick-link-btn">
+          <span>📊 HAProxy Dashboard (:8900)</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        </a>
+      </div>
+    </aside>
+
+    <!-- Content Workspace -->
+    <section class="content-area">
+
+      <!-- =============================================================== -->
+      <!-- TAB 1: FAILOVER & HIGH AVAILABILITY -->
+      <!-- =============================================================== -->
+      <div class="tab-pane active" id="pane-ha">
+        <div class="scenario-banner primary-theme">
+          <div class="banner-badge">SKENARIO 1 — KEANDALAN CLUSTER BASIS DATA</div>
+          <h2>Failover Otomatis & High Availability (Master-Slave + HAProxy)</h2>
+          <p>Membuktikan ketahanan sistem terhadap insiden padamnya server utama (Master Down) tanpa menyebabkan penghentian layanan klinik (Zero-Downtime).</p>
+        </div>
+
+        <!-- 3-Phase Stepper -->
+        <div class="phase-stepper">
+          <button class="phase-btn active" onclick="setPhase('ha', 'before')">
+            <span class="phase-pill red">Fase 1</span>
+            <div class="phase-meta">
+              <strong>BEFORE</strong>
+              <span>Tanpa HA (Single Server Mati)</span>
+            </div>
+          </button>
+          <div class="stepper-arrow">➔</div>
+          <button class="phase-btn" onclick="setPhase('ha', 'during')">
+            <span class="phase-pill yellow">Fase 2</span>
+            <div class="phase-meta">
+              <strong>DURING</strong>
+              <span>Master Dimatikan Paksa</span>
+            </div>
+          </button>
+          <div class="stepper-arrow">➔</div>
+          <button class="phase-btn" onclick="setPhase('ha', 'after')">
+            <span class="phase-pill green">Fase 3</span>
+            <div class="phase-meta">
+              <strong>AFTER</strong>
+              <span>Slave Ambil Alih & Reconnect</span>
+            </div>
+          </button>
+        </div>
+
+        <!-- Dynamic Content for HA Phase -->
+        <div class="card phase-display-card" id="ha-phase-card">
+          <!-- Rendered dynamically by JS based on selected phase -->
+        </div>
+
+        <!-- Live Terminal / Query Result for HA -->
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Terminal Eksekusi & Bukti Forensik</h3>
+            <span class="badge badge-role" id="ha-phase-badge">FASE 1: BEFORE-HA</span>
+          </div>
+          <div class="card-body">
+            <div class="terminal-box">
+              <pre class="terminal-content" id="ha-terminal">Klik salah satu tombol aksi di atas untuk menjalankan pengujian fase ini...</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- =============================================================== -->
+      <!-- TAB 2: SQL INJECTION -->
+      <!-- =============================================================== -->
+      <div class="tab-pane" id="pane-sqli">
+        <div class="scenario-banner danger-theme">
+          <div class="banner-badge">SKENARIO 2 — KEAMANAN APLIKASI WEB</div>
+          <h2>Uji Celah SQL Injection & Mitigasi Prepared Statement</h2>
+          <p>Mendemonstrasikan kebocoran rekam medis pasien melalui input manipulasi boolean string/numeric, serta pembuktian mitigasi menggunakan parameter binding.</p>
+        </div>
+
+        <!-- 3-Phase Stepper -->
+        <div class="phase-stepper">
+          <button class="phase-btn active" onclick="setPhase('sqli', 'before')">
+            <span class="phase-pill red">Fase 1</span>
+            <div class="phase-meta">
+              <strong>BEFORE</strong>
+              <span>Query String Biasa (Rentan)</span>
+            </div>
+          </button>
+          <div class="stepper-arrow">➔</div>
+          <button class="phase-btn" onclick="setPhase('sqli', 'during')">
+            <span class="phase-pill yellow">Fase 2</span>
+            <div class="phase-meta">
+              <strong>DURING</strong>
+              <span>Injeksi Tautologi ' OR '1'='1</span>
+            </div>
+          </button>
+          <div class="stepper-arrow">➔</div>
+          <button class="phase-btn" onclick="setPhase('sqli', 'after')">
+            <span class="phase-pill green">Fase 3</span>
+            <div class="phase-meta">
+              <strong>AFTER</strong>
+              <span>Prepared Statement (0 Rows)</span>
+            </div>
+          </button>
+        </div>
+
+        <div class="card phase-display-card" id="sqli-phase-card">
+          <!-- Rendered dynamically by JS -->
+        </div>
+
+        <div class="card result-card">
+          <div class="card-header">
+            <div class="title-with-badge">
+              <h3 class="card-title">Hasil Data Yang Diterima Klien</h3>
+              <span class="badge" id="sqli-result-badge">Menunggu Eksekusi</span>
+            </div>
+            <span class="execution-time" id="sqli-exec-time">0 ms</span>
+          </div>
+          <div class="card-body no-padding table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Nama Pasien</th>
+                  <th>Tanggal Lahir</th>
+                  <th>Alamat</th>
+                  <th>No. Telepon</th>
+                </tr>
+              </thead>
+              <tbody id="sqli-table-body">
+                <tr><td colspan="5" class="empty-cell">Pilih fase di atas untuk melihat respon basis data</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- =============================================================== -->
+      <!-- TAB 3: SSL/TLS & ENKRIPSI -->
+      <!-- =============================================================== -->
+      <div class="tab-pane" id="pane-crypto">
+        <div class="scenario-banner success-theme">
+          <div class="banner-badge">SKENARIO 3 — KRIPTOGRAFI & KEAMANAN TRANSPORT</div>
+          <h2>SSL/TLS Wajib (In-Transit) & Enkripsi AES-256 (At-Rest)</h2>
+          <p>Perlindungan data identitas NIK terhadap penyadapan jaringan dan pembacaan langsung storage tanpa otorisasi kunci simetris.</p>
+        </div>
+
+        <!-- 3-Phase Stepper -->
+        <div class="phase-stepper">
+          <button class="phase-btn active" onclick="setPhase('crypto', 'before')">
+            <span class="phase-pill red">Fase 1</span>
+            <div class="phase-meta">
+              <strong>BEFORE</strong>
+              <span>SSL OFF, NIK Plaintext</span>
+            </div>
+          </button>
+          <div class="stepper-arrow">➔</div>
+          <button class="phase-btn" onclick="setPhase('crypto', 'during')">
+            <span class="phase-pill yellow">Fase 2</span>
+            <div class="phase-meta">
+              <strong>DURING</strong>
+              <span>Akses Non-SSL & Intip Storage</span>
+            </div>
+          </button>
+          <div class="stepper-arrow">➔</div>
+          <button class="phase-btn" onclick="setPhase('crypto', 'after')">
+            <span class="phase-pill green">Fase 3</span>
+            <div class="phase-meta">
+              <strong>AFTER</strong>
+              <span>ERROR 3159 & AES Ciphertext</span>
+            </div>
+          </button>
+        </div>
+
+        <div class="card phase-display-card" id="crypto-phase-card">
+          <!-- Rendered dynamically by JS -->
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Terminal Bukti Keamanan Transport & Kriptografi</h3>
+          </div>
+          <div class="card-body">
+            <div class="terminal-box">
+              <pre class="terminal-content" id="crypto-terminal">Pilih fase di atas untuk menguji proteksi transport dan enkripsi...</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- =============================================================== -->
+      <!-- TAB 4: LEAST PRIVILEGE -->
+      <!-- =============================================================== -->
+      <div class="tab-pane" id="pane-rbac">
+        <div class="scenario-banner info-theme">
+          <div class="banner-badge">SKENARIO 4 — KONTROL AKSES & OTORISASI</div>
+          <h2>Prinsip Hak Akses Terkecil (Least Privilege / RBAC)</h2>
+          <p>Membatasi wewenang user database sehingga peretasan satu akun aplikasi tidak dapat merusak struktur data atau membocorkan data kredensial master.</p>
+        </div>
+
+        <!-- 3-Phase Stepper -->
+        <div class="phase-stepper">
+          <button class="phase-btn active" onclick="setPhase('rbac', 'before')">
+            <span class="phase-pill red">Fase 1</span>
+            <div class="phase-meta">
+              <strong>BEFORE</strong>
+              <span>Semua Pakai Root (Bahaya Penuh)</span>
+            </div>
+          </button>
+          <div class="stepper-arrow">➔</div>
+          <button class="phase-btn" onclick="setPhase('rbac', 'during')">
+            <span class="phase-pill yellow">Fase 2</span>
+            <div class="phase-meta">
+              <strong>DURING</strong>
+              <span>Percobaan DROP & Baca Users</span>
+            </div>
+          </button>
+          <div class="stepper-arrow">➔</div>
+          <button class="phase-btn" onclick="setPhase('rbac', 'after')">
+            <span class="phase-pill green">Fase 3</span>
+            <div class="phase-meta">
+              <strong>AFTER</strong>
+              <span>ERROR 1142 Akses Ditolak</span>
+            </div>
+          </button>
+        </div>
+
+        <div class="card phase-display-card" id="rbac-phase-card">
+          <!-- Rendered dynamically by JS -->
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Terminal MySQL Privilege Evaluation</h3>
+          </div>
+          <div class="card-body">
+            <div class="terminal-box">
+              <pre class="terminal-content" id="rbac-terminal">Pilih salah satu fase di atas untuk menguji dampak Least Privilege...</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- =============================================================== -->
+      <!-- TAB 5: AUDIT LOG -->
+      <!-- =============================================================== -->
+      <div class="tab-pane" id="pane-audit">
+        <div class="scenario-banner warning-theme">
+          <div class="banner-badge">SKENARIO 5 — DETEKSI ANOMALI & AUDIT FORENSIK</div>
+          <h2>Audit Logging Otomatis & Bukti Non-Repudiasi</h2>
+          <p>Menjamin setiap aksi mencurigakan terekam secara independen dengan stempel waktu riil, pelacakan IP, dan identitas user tanpa celah manipulasi.</p>
+        </div>
+
+        <!-- 3-Phase Stepper -->
+        <div class="phase-stepper">
+          <button class="phase-btn active" onclick="setPhase('audit', 'before')">
+            <span class="phase-pill red">Fase 1</span>
+            <div class="phase-meta">
+              <strong>BEFORE</strong>
+              <span>Tanpa Log (Buta Total)</span>
+            </div>
+          </button>
+          <div class="stepper-arrow">➔</div>
+          <button class="phase-btn" onclick="setPhase('audit', 'during')">
+            <span class="phase-pill yellow">Fase 2</span>
+            <div class="phase-meta">
+              <strong>DURING</strong>
+              <span>Insiden & Serangan Terjadi</span>
+            </div>
+          </button>
+          <div class="stepper-arrow">➔</div>
+          <button class="phase-btn" onclick="setPhase('audit', 'after')">
+            <span class="phase-pill green">Fase 3</span>
+            <div class="phase-meta">
+              <strong>AFTER</strong>
+              <span>Semua Terekam di Audit Trail</span>
+            </div>
+          </button>
+        </div>
+
+        <div class="card phase-display-card" id="audit-phase-card">
+          <!-- Rendered dynamically by JS -->
+        </div>
+
+        <div class="card result-card">
+          <div class="card-header">
+            <h3 class="card-title">Rekonstruksi Forensik: `klinik_db.audit_log` (Timestamp Asli Server)</h3>
+            <span class="badge badge-success">Automated Harvester Synchronized</span>
+          </div>
+          <div class="card-body no-padding table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Kategori Ancaman</th>
+                  <th>Tabel Target</th>
+                  <th>Kueri Yang Dieksekusi</th>
+                  <th>IP Sumber</th>
+                  <th>Waktu Kejadian (Asli)</th>
+                </tr>
+              </thead>
+              <tbody id="audit-table-body">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
