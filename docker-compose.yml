@@ -12,6 +12,16 @@ services:
       --general-log=1
       --general-log-file=/var/log/mysql/general.log
       --log-output=FILE,TABLE
+      --ssl-ca=/etc/mysql/certs/ca.pem
+      --ssl-cert=/etc/mysql/certs/server-cert.pem
+      --ssl-key=/etc/mysql/certs/server-key.pem
+    # CATATAN: --require-secure-transport=ON TIDAK boleh ditaruh di sini.
+    # Saat container pertama kali dibuat, entrypoint MySQL menjalankan
+    # temporary server dan menyambung lewat socket TANPA TLS untuk memuat
+    # sql/*.sql. Dengan flag itu aktif sejak boot, koneksi tersebut ditolak
+    # dan inisialisasi MACET permanen (container "Up" tapi mysqld tidak
+    # pernah ready). Penegakan TLS dinyalakan oleh scripts/aktifkan-tls.sh
+    # setelah kedua node siap -- lihat README.
     ports:
       - "3305:3306"
     environment:
@@ -19,6 +29,7 @@ services:
       MYSQL_DATABASE: klinik_db
     volumes:
       - ./sql:/docker-entrypoint-initdb.d
+      - ./ssl:/etc/mysql/certs 
     networks:
       - dbnet
 
@@ -31,6 +42,12 @@ services:
       --read-only=1
       --general-log=1
       --general-log-file=/var/log/mysql/general.log
+      --log-output=FILE,TABLE
+      --ssl-ca=/etc/mysql/certs/ca.pem
+      --ssl-cert=/etc/mysql/certs/server-cert.pem
+      --ssl-key=/etc/mysql/certs/server-key.pem
+    # --require-secure-transport=ON sengaja tidak di sini (lihat catatan
+    # pada db-master). Diaktifkan oleh scripts/aktifkan-tls.sh.
     ports:
       - "3307:3306"
     environment:
@@ -39,6 +56,8 @@ services:
       - dbnet
     depends_on:
       - db-master
+    volumes:
+      - ./ssl:/etc/mysql/certs
 
   haproxy:
     image: haproxy:2.8

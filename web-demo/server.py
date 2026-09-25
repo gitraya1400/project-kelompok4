@@ -123,8 +123,31 @@ class DemoHandler(http.server.SimpleHTTPRequestHandler):
                 output = "PS > docker exec db-master mysql ... (SSL ACTIVE)\n\n" + out + "\n[STATUS: SECURE TLSv1.3 ESTABLISHED]"
             else:
                 out, err, code = run_docker_mysql("app_user", "AppPass123!", "SELECT 1;", extra_flags=["--ssl-mode=DISABLED"])
-                cleaned_err = "\n".join([line for line in err.splitlines() if "Using a password" not in line])
-                output = "PS > docker exec db-master mysql ... --ssl-mode=DISABLED\n\n" + cleaned_err + "\n[STATUS: REJECTED AT TCP HANDSHAKE]"
+                cleaned_err = "\n".join([line for line in err.splitlines() if "Using a password" not in line]).strip()
+                header = "PS > docker exec db-master mysql ... --ssl-mode=DISABLED\n\n"
+
+                # Status HARUS mengikuti hasil nyata, bukan di-hardcode.
+                # Kalau returncode 0, koneksi tanpa SSL justru BERHASIL -- melaporkan
+                # "REJECTED" di situ sama saja mengarang bukti di depan penguji.
+                if code == 0:
+                    output = (header + (out or "").strip() +
+                              "\n\n[STATUS: KONEKSI TANPA SSL BERHASIL - BELUM AMAN]\n"
+                              "Penyebab: require_secure_transport masih OFF, jadi server\n"
+                              "tidak mewajibkan enkripsi. Aktifkan di docker-compose.yml:\n"
+                              "  --require-secure-transport=ON\n"
+                              "  --ssl-ca/--ssl-cert/--ssl-key  (mount folder ./ssl)\n"
+                              "Target yang benar: ERROR 3159.")
+                elif "3159" in cleaned_err:
+                    output = header + cleaned_err + "\n\n[STATUS: DITOLAK - ERROR 3159 (require_secure_transport=ON)]"
+                else:
+                    # Ditolak, tapi bukan oleh kebijakan TLS. Paling sering ERROR 2061
+                    # dari plugin caching_sha2_password -- itu efek samping autentikasi,
+                    # BUKAN bukti bahwa TLS diwajibkan.
+                    output = (header + cleaned_err +
+                              "\n\n[STATUS: DITOLAK - TAPI BUKAN OLEH KEBIJAKAN TLS]\n"
+                              "Ini penolakan dari plugin autentikasi (mis. ERROR 2061\n"
+                              "caching_sha2_password), bukan require_secure_transport.\n"
+                              "User dengan mysql_native_password tetap bisa masuk tanpa SSL.")
 
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')

@@ -263,11 +263,32 @@ async function runSqliAction(phase) {
     badge.textContent = `❌ SERANGAN SUKSES: Seluruh ${rows.length} Data Pasien Bocor!`;
     badge.className = 'badge badge-danger';
   } else {
-    // AFTER
-    await new Promise(r => setTimeout(r, 120));
-    rows = []; // 0 rows
-    badge.textContent = '✅ SERANGAN GAGAL: 0 Baris Data (Terlindungi Prepared Statement)';
-    badge.className = 'badge badge-success';
+    // AFTER -- buktikan lewat prepared statement di MySQL sungguhan,
+    // jangan hardcode 0 baris. Kalau mitigasinya rusak, demo harus jujur
+    // menampilkan data yang bocor, bukan tetap mengaku "aman".
+    if (isBackendLive) {
+      try {
+        const res = await fetch('/api/sqli', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mode: 'safe', input: "' OR '1'='1' -- " })
+        });
+        const data = await res.json();
+        rows = data.rows || [];
+      } catch(e) {
+        rows = [];
+      }
+    } else {
+      await new Promise(r => setTimeout(r, 120));
+      rows = [];
+    }
+    if (rows.length === 0) {
+      badge.textContent = '✅ SERANGAN GAGAL: 0 Baris Data (Terlindungi Prepared Statement)';
+      badge.className = 'badge badge-success';
+    } else {
+      badge.textContent = `❌ MITIGASI GAGAL: ${rows.length} baris masih bocor!`;
+      badge.className = 'badge badge-danger';
+    }
   }
 
   const duration = Math.round(performance.now() - startTime);
@@ -373,7 +394,10 @@ async function runCryptoAction(action) {
       } catch(e) {}
     }
     await new Promise(r => setTimeout(r, 200));
-    terminal.textContent = `PS > docker exec db-master mysql -h 127.0.0.1 -P 3306 -u app_user -pAppPass123! --ssl-mode=DISABLED -e "SELECT 1;"\n\nERROR 3159 (HY000): Connections using insecure transport are prohibited while --require_secure_transport=ON.\n\n[BUKTI KEBERHASILAN]:\n- Koneksi tanpa TLSv1.3 ditolak seketika pada level TCP!\n- Cipher Suite Aktif: TLS_AES_256_GCM_SHA384. Seluruh aliran data dijamin kerahasiaannya.`;
+    // Fallback saat backend mati: tandai JELAS sebagai contoh target, bukan
+    // hasil pengukuran. Menampilkan ERROR 3159 seolah-olah nyata padahal
+    // require_secure_transport masih OFF = mengarang bukti.
+    terminal.textContent = `[MODE SIMULASI - BACKEND TIDAK TERHUBUNG]\nOutput di bawah adalah CONTOH TARGET, bukan hasil eksekusi nyata.\nJalankan 'python server.py' untuk menguji ke cluster sungguhan.\n\nPS > docker exec db-master mysql -h 127.0.0.1 -P 3306 -u app_user -pAppPass123! --ssl-mode=DISABLED -e "SELECT 1;"\n\nERROR 3159 (HY000): Connections using insecure transport are prohibited while --require_secure_transport=ON.\n\n[TARGET YANG INGIN DICAPAI]:\n- Koneksi tanpa TLS ditolak dengan ERROR 3159.\n- Cipher aktif: TLS_AES_256_GCM_SHA384.\nSyarat: --require-secure-transport=ON dan sertifikat ./ssl ter-mount.`;
   } else if (action === 'after_aes') {
     await new Promise(r => setTimeout(r, 200));
     terminal.textContent = `PS > docker exec db-master mysql -u root -pRootPass123! -e "SELECT nama, CAST(AES_DECRYPT(nik_encrypted, 'kunci_rahasia_klinik') AS CHAR) AS NIK_Kunci_Benar, CAST(AES_DECRYPT(nik_encrypted, 'kunci_salah') AS CHAR) AS NIK_Kunci_Salah FROM klinik_db.pasien WHERE nik_encrypted IS NOT NULL LIMIT 3;"\n\n+--------------+------------------+-----------------+\n| nama         | NIK_Kunci_Benar  | NIK_Kunci_Salah |\n+--------------+------------------+-----------------+\n| Ahmad Fauzi  | 3201234567890001 | NULL            |\n| Siti Rahayu  | 3209876543210002 | NULL            |\n| Budi Santoso | 3201122334455003 | NULL            |\n+--------------+------------------+-----------------+\n\n[BUKTI KRIPTOGRAFI AT-REST]:\n- Dekripsi dengan kunci yang benar menghasilkan NIK valid.\n- Dekripsi dengan kunci salah menghasilkan NULL secara otomatis. Data tetap aman meskipun harddisk dicuri!`;
