@@ -4,6 +4,23 @@ Panduan lengkap untuk presentasi di depan penguji. Setiap langkah disertai **apa
 
 **Total waktu demo: ±15 menit** (belum termasuk persiapan).
 
+> ## ⚠️ Baca ini dulu — wajib di Git Bash
+>
+> Setiap perintah yang memakai `--ssl-ca=/etc/mysql/certs/...` **harus** diawali `MSYS_NO_PATHCONV=1`.
+>
+> Git Bash otomatis menerjemahkan argumen yang diawali `/` menjadi path Windows, sehingga `/etc/mysql/certs/ca.pem` berubah jadi `C:/Program Files/Git/etc/mysql/certs/ca.pem` sebelum sampai ke container. File itu tidak ada, dan muncul:
+>
+> ```
+> ERROR 2026 (HY000): SSL connection error: SSL_CTX_set_default_verify_paths failed
+> ```
+>
+> Semua perintah di panduan ini **sudah** memakai prefix tersebut. Kalau kalian mengetik ulang dari ingatan, jangan sampai terlewat.
+>
+> **Alternatif praktis:** ketik sekali di awal sesi terminal, lalu prefix tidak diperlukan lagi selama terminal itu terbuka:
+> ```bash
+> export MSYS_NO_PATHCONV=1
+> ```
+
 ---
 
 ## Daftar Isi
@@ -45,7 +62,7 @@ Lalu jalankan **tiga langkah wajib** berurutan:
 ```bash
 bash setup-replikasi.sh      # Skenario 1
 bash aktifkan-tls.sh         # Skenario 3
-docker exec -i db-master mysql -uroot -pRootPass123! \
+MSYS_NO_PATHCONV=1 docker exec -i db-master mysql -uroot -pRootPass123! \
   --ssl-ca=/etc/mysql/certs/ca.pem --ssl-mode=REQUIRED < sql/04-audit-harvest.sql
 ```
 
@@ -65,7 +82,7 @@ docker exec -i db-master mysql -uroot -pRootPass123! \
 docker ps
 
 # 2. Cek kesehatan sistem (ketiganya harus sesuai)
-docker exec db-slave mysql -uroot -pRootPass123! \
+MSYS_NO_PATHCONV=1 docker exec db-slave mysql -uroot -pRootPass123! \
   --ssl-ca=/etc/mysql/certs/ca.pem --ssl-mode=REQUIRED \
   -e "SHOW REPLICA STATUS\G" | grep "Running:"
 
@@ -84,7 +101,7 @@ Buka dua jendela browser:
 Supaya `audit_log` di Skenario 5 hanya berisi percobaan dari demo hari itu — bukan tumpukan dari rehearsal:
 
 ```bash
-docker exec db-master mysql -uroot -pRootPass123! \
+MSYS_NO_PATHCONV=1 docker exec db-master mysql -uroot -pRootPass123! \
   --ssl-ca=/etc/mysql/certs/ca.pem --ssl-mode=REQUIRED \
   -e "TRUNCATE TABLE klinik_db.audit_log;"
 ```
@@ -129,7 +146,7 @@ Sepakati siapa memegang apa sebelum masuk ruangan.
 > "Kedua node UP. HAProxy melakukan health check setiap 2 detik."
 
 ```bash
-docker exec db-slave mysql -uroot -pRootPass123! \
+MSYS_NO_PATHCONV=1 docker exec db-slave mysql -uroot -pRootPass123! \
   --ssl-ca=/etc/mysql/certs/ca.pem --ssl-mode=REQUIRED \
   -e "SHOW REPLICA STATUS\G" | grep -E "Running:|Source_SSL"
 ```
@@ -146,11 +163,11 @@ Source_SSL_Allowed: Yes
 ### Fase B — Buktikan replikasi bekerja
 
 ```bash
-docker exec db-master mysql -h haproxy -P 3300 -u app_user -pAppPass123! \
+MSYS_NO_PATHCONV=1 docker exec db-master mysql -h haproxy -P 3300 -u app_user -pAppPass123! \
   --ssl-ca=/etc/mysql/certs/ca.pem --ssl-mode=REQUIRED \
   -e "INSERT INTO klinik_db.pasien (nama) VALUES ('Pasien Demo Sidang');"
 
-docker exec db-slave mysql -uroot -pRootPass123! \
+MSYS_NO_PATHCONV=1 docker exec db-slave mysql -uroot -pRootPass123! \
   --ssl-ca=/etc/mysql/certs/ca.pem --ssl-mode=REQUIRED \
   -e "SELECT id, nama FROM klinik_db.pasien WHERE nama='Pasien Demo Sidang';"
 ```
@@ -168,7 +185,7 @@ docker stop db-master
 > "Master mati. Perhatikan HAProxy langsung mendeteksinya dalam 2 detik."
 
 ```bash
-docker exec db-slave mysql -h haproxy -P 3300 -u app_user -pAppPass123! \
+MSYS_NO_PATHCONV=1 docker exec db-slave mysql -h haproxy -P 3300 -u app_user -pAppPass123! \
   --ssl-ca=/etc/mysql/certs/ca.pem --ssl-mode=REQUIRED \
   -e "SELECT @@server_id AS dilayani_oleh, COUNT(*) AS jml FROM klinik_db.pasien;"
 ```
@@ -184,7 +201,7 @@ dilayani_oleh   jml
 Lalu tunjukkan batasannya — ini menambah kredibilitas:
 
 ```bash
-docker exec db-slave mysql -h haproxy -P 3300 -u app_user -pAppPass123! \
+MSYS_NO_PATHCONV=1 docker exec db-slave mysql -h haproxy -P 3300 -u app_user -pAppPass123! \
   --ssl-ca=/etc/mysql/certs/ca.pem --ssl-mode=REQUIRED \
   -e "INSERT INTO klinik_db.pasien (nama) VALUES ('Coba Tulis');"
 ```
@@ -201,7 +218,7 @@ ERROR 1290 (HY000): The MySQL server is running with the --read-only option
 ```bash
 docker start db-master
 # tunggu ±20 detik
-docker exec db-slave mysql -uroot -pRootPass123! \
+MSYS_NO_PATHCONV=1 docker exec db-slave mysql -uroot -pRootPass123! \
   --ssl-ca=/etc/mysql/certs/ca.pem --ssl-mode=REQUIRED \
   -e "SHOW REPLICA STATUS\G" | grep -E "Running:|Seconds_Behind"
 ```
@@ -242,7 +259,7 @@ Buka **http://localhost:8080** → tab **SQL Injection**.
 
 ```bash
 # Query rentan — dirakit dengan CONCAT
-docker exec -i db-master mysql -uroot -pRootPass123! \
+MSYS_NO_PATHCONV=1 docker exec -i db-master mysql -uroot -pRootPass123! \
   --ssl-ca=/etc/mysql/certs/ca.pem --ssl-mode=REQUIRED < sql/skenario2-attack.sql
 ```
 
@@ -250,7 +267,7 @@ docker exec -i db-master mysql -uroot -pRootPass123! \
 
 ```bash
 # Versi numerik — tanpa tanda kutip sama sekali
-docker exec -i db-master mysql -uroot -pRootPass123! \
+MSYS_NO_PATHCONV=1 docker exec -i db-master mysql -uroot -pRootPass123! \
   --ssl-ca=/etc/mysql/certs/ca.pem --ssl-mode=REQUIRED < sql/skenario2-attack-medis.sql
 ```
 
@@ -258,7 +275,7 @@ docker exec -i db-master mysql -uroot -pRootPass123! \
 
 ```bash
 # Mitigasi — prepared statement
-docker exec -i db-master mysql -uroot -pRootPass123! \
+MSYS_NO_PATHCONV=1 docker exec -i db-master mysql -uroot -pRootPass123! \
   --ssl-ca=/etc/mysql/certs/ca.pem --ssl-mode=REQUIRED < sql/skenario2-mitigation.sql
 ```
 
@@ -279,7 +296,7 @@ Keluaran: `Empty set` / 0 baris.
 ### Bagian 1 — Data in transit
 
 ```bash
-docker exec db-master mysql -uroot -pRootPass123! \
+MSYS_NO_PATHCONV=1 docker exec db-master mysql -uroot -pRootPass123! \
   --ssl-ca=/etc/mysql/certs/ca.pem --ssl-mode=REQUIRED \
   -e "SHOW VARIABLES LIKE 'require_secure_transport';"
 ```
@@ -302,7 +319,7 @@ while --require_secure_transport=ON.
 
 ```bash
 # Koneksi sah dengan sertifikat
-docker exec db-master mysql -h 127.0.0.1 -u app_user -pAppPass123! \
+MSYS_NO_PATHCONV=1 docker exec db-master mysql -h 127.0.0.1 -u app_user -pAppPass123! \
   --ssl-ca=/etc/mysql/certs/ca.pem --ssl-mode=VERIFY_CA \
   -e "SHOW STATUS LIKE 'Ssl_cipher';"
 ```
@@ -317,7 +334,7 @@ Ssl_cipher      TLS_AES_256_GCM_SHA384
 ### Bagian 2 — Data at rest
 
 ```bash
-docker exec db-master mysql -uroot -pRootPass123! \
+MSYS_NO_PATHCONV=1 docker exec db-master mysql -uroot -pRootPass123! \
   --ssl-ca=/etc/mysql/certs/ca.pem --ssl-mode=REQUIRED -e "
   SELECT nama,
          LEFT(HEX(nik_encrypted),24) AS cipher,
@@ -356,22 +373,22 @@ Keduanya menampilkan `ERROR 1142` dari MySQL sungguhan.
 
 ```bash
 # read_only — operasi yang SAH
-docker exec db-master mysql -h127.0.0.1 -u read_only -pReadPass123! \
+MSYS_NO_PATHCONV=1 docker exec db-master mysql -h127.0.0.1 -u read_only -pReadPass123! \
   --ssl-ca=/etc/mysql/certs/ca.pem --ssl-mode=REQUIRED \
   -e "SELECT COUNT(*) FROM klinik_db.pasien;"        # BERHASIL
 
 # read_only — di luar wewenang
-docker exec db-master mysql -h127.0.0.1 -u read_only -pReadPass123! \
+MSYS_NO_PATHCONV=1 docker exec db-master mysql -h127.0.0.1 -u read_only -pReadPass123! \
   --ssl-ca=/etc/mysql/certs/ca.pem --ssl-mode=REQUIRED \
   -e "SELECT * FROM klinik_db.rekam_medis;"          # ERROR 1142
 
 # app_user — mencoba merusak skema
-docker exec db-master mysql -h127.0.0.1 -u app_user -pAppPass123! \
+MSYS_NO_PATHCONV=1 docker exec db-master mysql -h127.0.0.1 -u app_user -pAppPass123! \
   --ssl-ca=/etc/mysql/certs/ca.pem --ssl-mode=REQUIRED \
   -e "DROP TABLE klinik_db.pasien;"                  # ERROR 1142
 
 # app_user — mengintip hash password
-docker exec db-master mysql -h127.0.0.1 -u app_user -pAppPass123! \
+MSYS_NO_PATHCONV=1 docker exec db-master mysql -h127.0.0.1 -u app_user -pAppPass123! \
   --ssl-ca=/etc/mysql/certs/ca.pem --ssl-mode=REQUIRED \
   -e "SELECT * FROM klinik_db.users;"                # ERROR 1142
 ```
@@ -393,7 +410,7 @@ docker exec db-master mysql -h127.0.0.1 -u app_user -pAppPass123! \
 > "Skenario terakhir membuktikan keempat percobaan tadi **terekam** dan bisa direkonstruksi untuk keperluan forensik."
 
 ```bash
-docker exec db-master mysql -uroot -pRootPass123! \
+MSYS_NO_PATHCONV=1 docker exec db-master mysql -uroot -pRootPass123! \
   --ssl-ca=/etc/mysql/certs/ca.pem --ssl-mode=REQUIRED \
   -e "CALL klinik_db.sp_harvest_audit();
       SELECT id, aksi, tabel_target, ip_address,
@@ -423,7 +440,7 @@ id  aksi                        tabel_target  ip_address  waktu
 Tunjukkan lapisan keduanya:
 
 ```bash
-docker exec db-master mysql -uroot -pRootPass123! \
+MSYS_NO_PATHCONV=1 docker exec db-master mysql -uroot -pRootPass123! \
   --ssl-ca=/etc/mysql/certs/ca.pem --ssl-mode=REQUIRED \
   -e "SELECT event_time, command_type, LEFT(CONVERT(argument USING utf8mb4),60) AS query
       FROM mysql.general_log WHERE command_type='Query'
@@ -507,6 +524,16 @@ Biasanya karena `docker compose down` dijalankan tanpa menjalankan ulang skrip:
 bash aktifkan-tls.sh
 ```
 
+### `ERROR 2026: SSL connection error: SSL_CTX_set_default_verify_paths failed`
+
+Prefix `MSYS_NO_PATHCONV=1` terlewat. Git Bash mengubah `/etc/mysql/certs/ca.pem` menjadi path Windows yang tidak ada di dalam container.
+
+Perbaikan cepat — ketik sekali, berlaku untuk seluruh sesi terminal:
+```bash
+export MSYS_NO_PATHCONV=1
+```
+Lalu ulangi perintah yang gagal. Ini **bukan** masalah sertifikat atau konfigurasi TLS; sistemnya baik-baik saja.
+
 ### Web demo badge biru
 
 `server.py` belum jalan atau sudah tertutup:
@@ -538,19 +565,19 @@ cd web-demo && python server.py
 
 # S1 FAILOVER
 docker stop db-master
-docker exec db-slave mysql -h haproxy -P 3300 -uapp_user -pAppPass123! --ssl-ca=/etc/mysql/certs/ca.pem --ssl-mode=REQUIRED -e "SELECT @@server_id;"
+MSYS_NO_PATHCONV=1 docker exec db-slave mysql -h haproxy -P 3300 -uapp_user -pAppPass123! --ssl-ca=/etc/mysql/certs/ca.pem --ssl-mode=REQUIRED -e "SELECT @@server_id;"
 docker start db-master
 
 # S2 SQL INJECTION
-docker exec -i db-master mysql -uroot -pRootPass123! --ssl-ca=/etc/mysql/certs/ca.pem --ssl-mode=REQUIRED < sql/skenario2-attack.sql
-docker exec -i db-master mysql -uroot -pRootPass123! --ssl-ca=/etc/mysql/certs/ca.pem --ssl-mode=REQUIRED < sql/skenario2-mitigation.sql
+MSYS_NO_PATHCONV=1 docker exec -i db-master mysql -uroot -pRootPass123! --ssl-ca=/etc/mysql/certs/ca.pem --ssl-mode=REQUIRED < sql/skenario2-attack.sql
+MSYS_NO_PATHCONV=1 docker exec -i db-master mysql -uroot -pRootPass123! --ssl-ca=/etc/mysql/certs/ca.pem --ssl-mode=REQUIRED < sql/skenario2-mitigation.sql
 
 # S3 TLS
 docker exec db-master mysql -h127.0.0.1 -utls_demo -pDemo123! --ssl-mode=DISABLED -e "SELECT 1;"
 
 # S4 LEAST PRIVILEGE
-docker exec db-master mysql -h127.0.0.1 -uread_only -pReadPass123! --ssl-ca=/etc/mysql/certs/ca.pem --ssl-mode=REQUIRED -e "SELECT * FROM klinik_db.rekam_medis;"
+MSYS_NO_PATHCONV=1 docker exec db-master mysql -h127.0.0.1 -uread_only -pReadPass123! --ssl-ca=/etc/mysql/certs/ca.pem --ssl-mode=REQUIRED -e "SELECT * FROM klinik_db.rekam_medis;"
 
 # S5 AUDIT
-docker exec db-master mysql -uroot -pRootPass123! --ssl-ca=/etc/mysql/certs/ca.pem --ssl-mode=REQUIRED -e "CALL klinik_db.sp_harvest_audit(); SELECT * FROM klinik_db.audit_log;"
+MSYS_NO_PATHCONV=1 docker exec db-master mysql -uroot -pRootPass123! --ssl-ca=/etc/mysql/certs/ca.pem --ssl-mode=REQUIRED -e "CALL klinik_db.sp_harvest_audit(); SELECT * FROM klinik_db.audit_log;"
 ```

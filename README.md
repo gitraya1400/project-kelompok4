@@ -160,9 +160,11 @@ bash setup-replikasi.sh
 bash aktifkan-tls.sh
 
 # 3. Muat prosedur audit (Skenario 5)
-docker exec -i db-master mysql -uroot -pRootPass123! \
+MSYS_NO_PATHCONV=1 docker exec -i db-master mysql -uroot -pRootPass123! \
   --ssl-ca=/etc/mysql/certs/ca.pem --ssl-mode=REQUIRED < sql/04-audit-harvest.sql
 ```
+
+> **`MSYS_NO_PATHCONV=1` wajib di Git Bash.** Tanpa itu, `/etc/mysql/certs/ca.pem` diubah menjadi `C:/Program Files/Git/etc/mysql/certs/ca.pem` dan muncul `ERROR 2026: SSL_CTX_set_default_verify_paths failed`. Ketik `export MSYS_NO_PATHCONV=1` sekali di awal sesi agar berlaku untuk semua perintah berikutnya.
 
 Setelah `bash setup-replikasi.sh` selesai, pastikan muncul:
 
