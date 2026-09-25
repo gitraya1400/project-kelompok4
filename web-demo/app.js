@@ -475,12 +475,48 @@ async function runRbacAction(action) {
   } else if (action === 'during') {
     await new Promise(r => setTimeout(r, 250));
     terminal.textContent = `[SERANGAN BERLANGSUNG]:\n- Penyerang masuk menggunakan akun 'read_only'@'127.0.0.1'\n- Penyerang mengeksekusi: DROP TABLE klinik_db.pasien;\n- Penyerang mengeksekusi: SELECT * FROM klinik_db.users;\n\nMemeriksa apakah sistem mengizinkan atau menolak tindakan ini...`;
-  } else if (action === 'after_readonly') {
+  } else if (action === 'after_readonly' || action === 'after_appuser') {
+    // Kedua aksi ini diuji ke MySQL SUNGGUHAN lewat /api/rbac, bukan teks
+    // hardcode. Kalau suatu saat GRANT-nya salah dan operasi justru lolos,
+    // panel harus menampilkannya apa adanya -- bukan tetap mengaku "aman".
+    const cfg = (action === 'after_readonly')
+      ? { role: 'read_only', act: 'SELECT_MEDIS',
+          sukses: '[BUKTI PRIVILEGE SUKSES]:\n' +
+                  '- Privasi terlindungi: user read_only ditolak membaca rekam medis pasien.\n' +
+                  '- MySQL mengembalikan ERROR 1142 (Access Denied).',
+          gagal:  '[PERIKSA] Operasi ini SEHARUSNYA ditolak, tetapi justru berhasil.\n' +
+                  'Periksa GRANT untuk read_only di sql/02-users.sql.' }
+      : { role: 'app_user', act: 'DROP_TABLE',
+          sukses: '[BUKTI INTEGRITAS SUKSES]:\n' +
+                  '- Akun aplikasi diisolasi hanya untuk DML (SELECT, INSERT, UPDATE).\n' +
+                  '- Hak DDL (DROP TABLE, ALTER) dilarang total.',
+          gagal:  '[PERIKSA] DROP TABLE SEHARUSNYA ditolak, tetapi justru berhasil.\n' +
+                  'Periksa GRANT untuk app_user di sql/02-users.sql.' };
+
+    if (isBackendLive) {
+      try {
+        const res = await fetch('/api/rbac', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ role: cfg.role, action: cfg.act })
+        });
+        const data = await res.json();
+        const out = data.output || '';
+        const ditolak = out.includes('ACCESS DENIED') || out.includes('1142');
+        terminal.textContent = out + '\n\n' + (ditolak ? cfg.sukses : cfg.gagal);
+        return;
+      } catch (e) { /* jatuh ke mode simulasi di bawah */ }
+    }
+
     await new Promise(r => setTimeout(r, 200));
-    terminal.textContent = `PS > docker exec db-master mysql -h 127.0.0.1 -P 3306 -u read_only -pReadPass123! -e "SELECT * FROM klinik_db.rekam_medis;"\n\nERROR 1142 (42000) at line 1: SELECT command denied to user 'read_only'@'127.0.0.1' for table 'rekam_medis'\n\n[BUKTI PRIVILEGE SUKSES]:\n- Privasi Terlindungi: User read_only/analis ditolak mengakses data rekam medis pasien yang bersifat rahasia!\n- MySQL mengembalikan respon resmi ERROR 1142 (Access Denied).`;
-  } else if (action === 'after_appuser') {
-    await new Promise(r => setTimeout(r, 200));
-    terminal.textContent = `PS > docker exec db-master mysql -h 127.0.0.1 -P 3306 -u app_user -pAppPass123! -e "DROP TABLE klinik_db.pasien;"\n\nERROR 1142 (42000) at line 1: DROP command denied to user 'app_user'@'127.0.0.1' for table 'pasien'\n\n[BUKTI INTEGRITAS SUKSES]:\n- Akun aplikasi klinik diisolasi hanya untuk DML (SELECT, INSERT, UPDATE).\n- Hak DDL (DROP TABLE, ALTER) dilarang total. Integritas skema database aman dari aksi sabotase!`;
+    terminal.textContent =
+      `[MODE SIMULASI - BACKEND TIDAK TERHUBUNG]\n` +
+      `Output di bawah adalah CONTOH TARGET, bukan hasil eksekusi nyata.\n` +
+      `Jalankan 'python server.py' untuk menguji ke cluster sungguhan.\n\n` +
+      (action === 'after_readonly'
+        ? `PS > docker exec db-master mysql -u read_only -pReadPass123! -e "SELECT * FROM klinik_db.rekam_medis;"\n\nERROR 1142 (42000): SELECT command denied to user 'read_only'@'127.0.0.1' for table 'rekam_medis'`
+        : `PS > docker exec db-master mysql -u app_user -pAppPass123! -e "DROP TABLE klinik_db.pasien;"\n\nERROR 1142 (42000): DROP command denied to user 'app_user'@'127.0.0.1' for table 'pasien'`) +
+      `\n\n` + cfg.sukses;
   }
 }
 

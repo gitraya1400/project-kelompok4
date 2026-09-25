@@ -7,7 +7,10 @@ from docx.enum.table import WD_TABLE_ALIGNMENT, WD_ALIGN_VERTICAL
 from docx.oxml import parse_xml
 from docx.oxml.ns import nsdecls
 
-SCREENSHOTS_DIR = r"d:\STIS SEM 6\KSI\ksi-akhir\project-kelompok4\screenshots"
+# Path relatif terhadap lokasi skrip ini, supaya jalan di mesin semua
+# anggota tim (sebelumnya hardcode ke folder yang hanya ada di 1 laptop).
+_BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+SCREENSHOTS_DIR = os.path.join(_BASE_DIR, "screenshots")
 
 def create_full_document_with_images():
     doc = Document()
@@ -700,7 +703,7 @@ def create_full_document_with_images():
     p_s2.add_run("Mengetahui & Menyetujui:\nDosen Pengampu Keamanan SI\n\n\n\n( _____________________________ )\nNIP: ")
     p_s2.alignment = WD_ALIGN_PARAGRAPH.CENTER
     
-    output_path = r"d:\STIS SEM 6\KSI\ksi-akhir\project-kelompok4\Laporan_dan_Panduan_Pengujian_Keamanan_klinik_db.docx"
+    output_path = os.path.join(_BASE_DIR, "Laporan_dan_Panduan_Pengujian_Keamanan_klinik_db.docx")
     doc.save(output_path)
     print(f"Document saved successfully with all embedded images at: {output_path}")
 

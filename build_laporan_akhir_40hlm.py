@@ -4,8 +4,8 @@ Menggunakan screenshot ASLI dari 'pengujian sementara.docx' (22 Tangkapan Layar 
 dan mengikuti seluruh alur pengujian serta data aktual kelompok.
 
 Target file:
-1. d:\STIS SEM 6\KSI\Proposal_Proyek_Akhir_Keamanan_SI (1).docx
-2. d:\STIS SEM 6\KSI\Laporan_Akhir_Proyek_Keamanan_SI_Kelompok4.docx
+1. Proposal_Proyek_Akhir_Keamanan_SI.docx (di folder projek)
+2. Laporan_Akhir_Proyek_Keamanan_SI_Kelompok4.docx (dihasilkan di folder projek)
 """
 
 import os
@@ -18,7 +18,10 @@ from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.oxml import parse_xml
 from docx.oxml.ns import nsdecls
 
-USER_SCREENSHOTS_DIR = r"d:\STIS SEM 6\KSI\ksi-akhir\project-kelompok4\user_screenshots"
+# Path relatif terhadap lokasi skrip ini, supaya jalan di mesin semua
+# anggota tim (sebelumnya hardcode ke folder yang hanya ada di 1 laptop).
+_BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+USER_SCREENSHOTS_DIR = os.path.join(_BASE_DIR, "user_screenshots")
 
 def generate_report(output_paths):
     doc = Document()
@@ -1458,8 +1461,8 @@ def generate_report(output_paths):
         print(f"Document saved successfully at: {p}")
 
 if __name__ == "__main__":
+    # Simpan di folder projek, bukan path absolut milik satu laptop.
     targets = [
-        r"d:\STIS SEM 6\KSI\Proposal_Proyek_Akhir_Keamanan_SI (1).docx",
-        r"d:\STIS SEM 6\KSI\Laporan_Akhir_Proyek_Keamanan_SI_Kelompok4.docx"
+        os.path.join(_BASE_DIR, "Laporan_Akhir_Proyek_Keamanan_SI_Kelompok4.docx")
     ]
     generate_report(targets)

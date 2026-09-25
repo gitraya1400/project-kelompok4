@@ -39,9 +39,15 @@ BEGIN
       -- bukan percobaan penyerang. Tanpa filter ini audit_log penuh noise.
       AND CAST(argument AS CHAR) NOT LIKE '%root%@%localhost%'
       AND NOT EXISTS (
+          -- Dedup HANYA berdasarkan isi, JANGAN pakai waktu:
+          -- audit_log.waktu bertipe TIMESTAMP (detik) dan MySQL MEMBULATKAN
+          -- pecahan detik ke atas (.735 -> +1 detik), sedangkan event_time
+          -- punya mikrodetik. Perbandingan waktu karena itu tidak pernah
+          -- cocok dan baris yang sama terpanen ulang setiap CALL.
           SELECT 1 FROM klinik_db.audit_log a
           WHERE a.aksi = 'CONNECTION_REJECTED_NO_SSL'
-            AND a.waktu = mysql.general_log.event_time
+            AND a.query_exec = CONCAT('Koneksi tanpa TLS ditolak (require_secure_transport=ON): ',
+                                      LEFT(CAST(mysql.general_log.argument AS CHAR), 150))
       );
 
     -- 2. Deteksi SQL Injection (Pola manipulasi boolean / quote injection)
@@ -70,7 +76,6 @@ BEGIN
       AND NOT EXISTS (
           SELECT 1 FROM klinik_db.audit_log a 
           WHERE a.query_exec = CAST(mysql.general_log.argument AS CHAR)
-            AND a.waktu = mysql.general_log.event_time
       );
 
     -- 3. Deteksi Unauthorized DROP TABLE (Percobaan DDL destruktif oleh non-root)
@@ -95,7 +100,6 @@ BEGIN
       AND NOT EXISTS (
           SELECT 1 FROM klinik_db.audit_log a 
           WHERE a.query_exec = CAST(mysql.general_log.argument AS CHAR)
-            AND a.waktu = mysql.general_log.event_time
       );
 
     -- 4. Deteksi Unauthorized SELECT (Pelanggaran hak akses data oleh user terbatas)
@@ -125,7 +129,6 @@ BEGIN
       AND NOT EXISTS (
           SELECT 1 FROM klinik_db.audit_log a 
           WHERE a.query_exec = CAST(mysql.general_log.argument AS CHAR)
-            AND a.waktu = mysql.general_log.event_time
       );
 
     -- 5. Deteksi Unauthorized INSERT (Pelanggaran tulis oleh user read_only)
@@ -144,7 +147,6 @@ BEGIN
       AND NOT EXISTS (
           SELECT 1 FROM klinik_db.audit_log a 
           WHERE a.query_exec = CAST(mysql.general_log.argument AS CHAR)
-            AND a.waktu = mysql.general_log.event_time
       );
 
 END //

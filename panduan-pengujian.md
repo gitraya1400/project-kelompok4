@@ -20,7 +20,7 @@ Sebelum menjalankan skenario apa pun, pastikan checklist ini **semua ✅**, kare
   SHOW SLAVE STATUS\G
   ```
   Pastikan `Slave_IO_Running: Yes` dan `Slave_SQL_Running: Yes`
-- [ ] HAProxy jalan di port 3300, dashboard bisa dibuka di `http://localhost:8404`
+- [ ] HAProxy jalan di port 3300, dashboard bisa dibuka di `http://localhost:8900`
 - [ ] Dashboard HAProxy menunjukkan kedua backend (Master & Slave) berstatus **UP** (hijau)
 
 ### 1.2 Sertifikat SSL/TLS sudah terpasang
@@ -98,11 +98,11 @@ Ini penting supaya kalau demo skenario 1 gagal di tengah jalan, kamu tidak perlu
 
 | Fase | Langkah | Perintah / Aksi |
 |---|---|---|
-| Before-Attack | 1. Buka dashboard HAProxy, screenshot kedua node UP | Browser → `http://localhost:8404` |
+| Before-Attack | 1. Buka dashboard HAProxy, screenshot kedua node UP | Browser → `http://localhost:8900` |
 | Before-Attack | 2. INSERT data baru via HAProxy (port 3300) | `mysql -h 127.0.0.1 -P 3300 -u app_user -p --ssl-ca=<ca.pem> klinik_db -e "INSERT INTO pasien (nama, ...) VALUES (...)"` |
 | Before-Attack | 3. Verifikasi data sudah masuk ke Slave langsung (port 3307) | `mysql -h 127.0.0.1 -P 3307 -u root -p -e "SELECT * FROM klinik_db.pasien ORDER BY id DESC LIMIT 1"` |
 | During-Attack | 4. Matikan Master paksa | Docker: `docker stop db-master` / Windows: matikan MySQL lewat XAMPP Control Panel |
-| During-Attack | 5. Screenshot dashboard HAProxy → Master harus DOWN, Slave tetap UP | Browser refresh `:8404` |
+| During-Attack | 5. Screenshot dashboard HAProxy → Master harus DOWN, Slave tetap UP | Browser refresh `:8900` |
 | During-Attack | 6. SELECT via port 3300 → harus tetap berhasil (dialihkan ke Slave) | `mysql -h 127.0.0.1 -P 3300 -u app_user -p --ssl-ca=<ca.pem> klinik_db -e "SELECT * FROM pasien"` |
 | During-Attack | 7. INSERT via port 3300 saat Master down → harus gagal dengan error informatif, bukan crash | `mysql -h 127.0.0.1 -P 3300 -u app_user -p --ssl-ca=<ca.pem> klinik_db -e "INSERT INTO pasien ..."` → catat pesan error persis |
 | After-Mitigation | 8. Nyalakan kembali Master | `docker start db-master` / nyalakan lewat XAMPP |

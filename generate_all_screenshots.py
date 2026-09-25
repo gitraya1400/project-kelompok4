@@ -9,7 +9,10 @@ from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.oxml import parse_xml
 from docx.oxml.ns import nsdecls
 
-SCREENSHOTS_DIR = r"d:\STIS SEM 6\KSI\ksi-akhir\project-kelompok4\screenshots"
+# Path relatif terhadap lokasi skrip ini, supaya jalan di mesin semua
+# anggota tim (sebelumnya hardcode ke folder yang hanya ada di 1 laptop).
+_BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+SCREENSHOTS_DIR = os.path.join(_BASE_DIR, "screenshots")
 os.makedirs(SCREENSHOTS_DIR, exist_ok=True)
 
 # 1. Helper to render terminal screenshot
@@ -47,8 +50,8 @@ def render_terminal_image(output_path, title, lines_data, width=1100):
     for line_type, text in lines_data:
         x = padding
         if line_type == "prompt":
-            draw.text((x, y), "PS D:\\STIS SEM 6\\KSI\\ksi-akhir\\project-kelompok4> ", font=font, fill=(56, 189, 248))
-            prompt_w = draw.textlength("PS D:\\STIS SEM 6\\KSI\\ksi-akhir\\project-kelompok4> ", font=font)
+            draw.text((x, y), "PS D:\\project-kelompok4> ", font=font, fill=(56, 189, 248))
+            prompt_w = draw.textlength("PS D:\\project-kelompok4> ", font=font)
             draw.text((x + prompt_w, y), text, font=font, fill=(248, 250, 252))
         elif line_type == "cmd_cont":
             draw.text((x + 20, y), text, font=font, fill=(248, 250, 252))

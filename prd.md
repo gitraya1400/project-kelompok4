@@ -45,7 +45,7 @@ Klien / Script Demo
         │  (port 3300, wajib TLS)
         ▼
     HAProxy (load balancer + health check tiap 2 detik)
-    ├── dashboard monitoring: port 8404
+    ├── dashboard monitoring: port 8900
         │
    ┌────┴────┐
    ▼         ▼

@@ -52,8 +52,8 @@ Lab pengujian keamanan basis data klinik: **MySQL Master–Slave + HAProxy**, de
 | db-master | **3305** | akses langsung master |
 | db-slave | **3307** | verifikasi replikasi |
 
-> **Catatan:** `prd.md` dan `panduan-pengujian.md` menulis dashboard di port **8404**.
-> Nilai yang benar sesuai [config/haproxy.cfg](config/haproxy.cfg) adalah **8900**. Perbaiki di laporan.
+> **Catatan:** port dashboard yang benar adalah **8900** sesuai [config/haproxy.cfg](config/haproxy.cfg).
+> `prd.md`, `panduan-pengujian.md`, dan `task.md` sebelumnya menulis 8404 — sudah diperbaiki.
 
 **Perilaku load balancer.** `db-slave` ditandai `backup`, artinya **seluruh** trafik diarahkan ke master selama master hidup, dan baru dialihkan ke slave saat master mati. Inilah perilaku yang dibutuhkan Skenario 1 (failover). Baris `balance roundrobin` pada konfigurasi karena itu tidak pernah terpakai.
 
@@ -85,9 +85,9 @@ web-demo/                       aplikasi peraga interaktif (port 8080)
   index.html / app.js / style.css
   run-demo.bat                  pintasan jalankan di Windows
 user_screenshots/               22 screenshot ASLI — dipakai laporan 40 halaman
-screenshots/                    20 gambar hasil render PIL (lihat catatan)
+screenshots/                    19 gambar hasil render PIL (lihat catatan)
 prd.md                          Product Requirements Document
-task.md                         checklist pekerjaan (0 / 75 tercentang)
+task.md                         checklist pekerjaan (55 / 75 tercentang)
 panduan-pengujian.md            panduan eksekusi per skenario
 pengujian sementara.docx/.pdf   laporan + panduan screenshot
 build_laporan_akhir_40hlm.py    generator laporan akhir → user_screenshots/
@@ -395,33 +395,33 @@ Dikerjakan lewat [setup-replikasi.sh](setup-replikasi.sh). Skrip mengambil koord
 
 > Kalau menjalankan `CHANGE REPLICATION SOURCE TO` manual, `SOURCE_LOG_FILE`/`SOURCE_LOG_POS` harus diisi nilai nyata. Menyalin mentah placeholder seperti `'<dari SHOW MASTER STATUS>'` menghasilkan `ERROR 1064` (syntax error). Pakai skrip saja.
 
-### 3. Perbaiki path hardcoded di skrip Python
+### ✅ 3. Path hardcoded di skrip Python — SELESAI
 
-Ketiga generator menunjuk folder yang **tidak ada di mesin ini**:
-
-```python
-r"d:\STIS SEM 6\KSI\ksi-akhir\project-kelompok4\user_screenshots"
-```
-
-Projek ini berada di `D:\Perkuliahan\SEMESTER 6\KSI\projek akhir\`, jadi generator akan gagal atau melewati semua gambar. Ganti dengan path relatif supaya jalan di semua mesin anggota tim:
+Ketiga generator (`build_laporan_akhir_40hlm.py`, `build_full_word_report.py`, `generate_all_screenshots.py`) kini memakai path relatif:
 
 ```python
-import os
-BASE = os.path.dirname(os.path.abspath(__file__))
-USER_SCREENSHOTS_DIR = os.path.join(BASE, "user_screenshots")
+_BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+USER_SCREENSHOTS_DIR = os.path.join(_BASE_DIR, "user_screenshots")
 ```
 
-Pertimbangkan juga menghapus `screenshots/` (versi PIL) agar tidak tertukar — `build_full_word_report.py` masih menunjuk ke sana.
+Path output laporan dan prompt pada gambar PIL juga sudah tidak lagi menunjuk folder milik satu laptop. Terverifikasi: `user_screenshots/` (22 berkas) dan `screenshots/` (19 berkas) kini ditemukan dari folder projek mana pun.
 
-### 4. Sambungkan panel RBAC ke backend
+> Untuk menjalankan generator laporan, pasang dependensinya lebih dulu: `pip install python-docx pillow`.
 
-Endpoint `POST /api/rbac` sudah berfungsi di [web-demo/server.py](web-demo/server.py) dan mengembalikan `ERROR 1142` sungguhan, tetapi `app.js` belum pernah memanggilnya — panel Least Privilege masih menampilkan teks statis. Menyambungkannya membuat Skenario 4 ikut membuktikan diri saat demo.
+### ✅ 4. Panel RBAC tersambung ke backend — SELESAI
 
-### 5. Lengkapi dokumen
+Tombol **"Uji read_only Coba Akses Medis"** dan **"Uji app_user Coba DROP TABLE"** kini memanggil `POST /api/rbac` dan menampilkan `ERROR 1142` dari MySQL sungguhan. Kalau suatu saat GRANT-nya salah dan operasi justru lolos, panel menampilkan peringatan `[PERIKSA]` — bukan tetap mengaku aman.
 
-- `task.md` — **0 dari 75** item tercentang; perbarui sesuai progres nyata
-- `prd.md` & `panduan-pengujian.md` — perbaiki port dashboard 8404 → **8900**
-- Proposal BAB I, II, IV, V masih berupa template
+### ✅ 5. Port dashboard & checklist — SELESAI
+
+- `prd.md`, `panduan-pengujian.md`, `task.md` — port dashboard diperbaiki 8404 → **8900**
+- `task.md` — **55 dari 75** item tercentang, hanya yang sudah diverifikasi langsung
+
+### 6. Sisa pekerjaan dokumen
+
+- Proposal **BAB I, II, IV, V** masih berupa template — perlu ditulis tim
+- **Jalur B (XAMPP + Laragon)** tidak dikerjakan; sudah dicatat di `task.md` sebagai batasan ruang lingkup, bukan pekerjaan tertinggal
+- Pertimbangkan menghapus `screenshots/` (versi PIL) agar tidak tertukar dengan `user_screenshots/` yang asli
 
 ---
 
